@@ -1,8 +1,8 @@
+geopandas
 streamlit
 pydeck
 pandas
 numpy
-geopandas
 opencage
 python-dateutil
 geopy
