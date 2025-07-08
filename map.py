@@ -13,9 +13,9 @@ import os
 # Set your Mapbox token as environment variable
 os.environ["MAPBOX_API_KEY"] = "pk.eyJ1IjoicnNpZGRpcTIiLCJhIjoiY21jbjcwNWtkMHV5bzJpb2pnM3QxaDFtMyJ9.6T6i_QFuKQatpGaCFUvCKg"
 
-HOURS_CSV = "/Users/rsiddiq2/Downloads/llama-index/fbcenc_hourly.csv"
-ODM_CSV = "/Users/rsiddiq2/Downloads/llama-index/ODM FBCENC 2.csv"
-TRACTS_SHP = "/Users/rsiddiq2/Downloads/llama-index/cb_2023_37_tract_500k.shp"
+HOURS_CSV = "fbcenc_hourly.csv"
+ODM_CSV = "ODM FBCENC 2.csv"
+TRACTS_SHP = "cb_2023_37_tract_500k.shp"
 
 OPENCAGE_API_KEY = "f53bdda785074d5499b7a4d29d5acd1f"
 geocoder = OpenCageGeocode(OPENCAGE_API_KEY)
