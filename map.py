@@ -81,7 +81,7 @@ if user_address:
 
     if use_now:
         selected_datetime = datetime.now()
-        #st.info(f"Using current time: {selected_datetime.strftime('%A %Y-%m-%d %I:%M %p')}")
+        st.info(f"Using current time: {selected_datetime.strftime('%A %Y-%m-%d %I:%M %p')}")
     else:
         future_date = st.date_input(
             "Select a future date:",
