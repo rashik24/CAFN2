@@ -98,9 +98,9 @@ if user_address:
     selected_week_num = (selected_datetime.day - 1) // 7 + 1
     selected_time = selected_datetime.time()
 
-    st.write(f"Selected Day: {selected_day}")
-    st.write(f"Selected Week: {selected_week_num}")
-    st.write(f"Selected Time: {selected_time.strftime('%I:%M %p')}")
+    #st.write(f"Selected Day: {selected_day}")
+    #st.write(f"Selected Week: {selected_week_num}")
+    #st.write(f"Selected Time: {selected_time.strftime('%I:%M %p')}")
 
     # ─── FIND AGENCIES REACHABLE FROM GEOID ─────────────────────────────
 
@@ -115,7 +115,7 @@ if user_address:
 
     accessible_agencies = agencies_from_user_geoid["agency_name"].unique()
 
-    st.write(f"Agencies reachable from your location: {len(accessible_agencies)}")
+    #st.write(f"Agencies reachable from your location: {len(accessible_agencies)}")
 
     # ─── TIME WINDOW CHECK ──────────────────────────────────────────────
 
