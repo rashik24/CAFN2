@@ -12,11 +12,19 @@ geocoder = OpenCageGeocode(OPENCAGE_API_KEY)
 AGENCY_CSV = "CAFN_July_edit.csv"  # columns: Name, Contact, Hours, Address, Latitude, Longitude
 ODM_CSV = "ODM FBCENC 2.csv"            # columns: Total_TravelTime, Agency_name, Latitude, Longitude, etc.
 
+def haversine_distance(lat1, lon1, lat2, lon2):
+    R = 6371  # Earth radius in km
+    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+    c = 2 * np.arcsin(np.sqrt(a))
+    return R * c * 0.621371  # Convert to miles
+
 # ─── STREAMLIT APP ───────────────────────────────────────────────────────
 st.set_page_config(page_title="Food Pantries Map", layout="wide")
 st.title("Nearest Food Pantry Finder")
 
-# ─── USER INPUT ──────────────────────────────────────────────────────────
 user_address = st.text_input("Enter your address (e.g., 123 Main St, Raleigh, NC):")
 
 if user_address:
@@ -33,32 +41,34 @@ if user_address:
         st.error(f"Geocoding error: {e}")
         st.stop()
 
-    # ─── LOAD DATA ───────────────────────────────────────────────────────
+    # ─── LOAD ODM DATA ──────────────────────────────────────────────
     odm_df = pd.read_csv(ODM_CSV)
     odm_df.columns = odm_df.columns.str.strip()
 
-    # DEBUG: show first few rows
-    st.write("ODM Sample Data:")
-    st.write(odm_df.head())
+    # Ensure numeric columns
+    odm_df["Latitude"] = pd.to_numeric(odm_df["Latitude"], errors="coerce")
+    odm_df["Longitude"] = pd.to_numeric(odm_df["Longitude"], errors="coerce")
 
-    # Filter valid travel times
-    odm_df = odm_df[odm_df["Total_TravelTime"].notna()]
-    odm_df = odm_df.sort_values(by="Total_TravelTime")
+    # ─── CALCULATE DISTANCE FROM USER ───────────────────────────────
+    odm_df["User_Distance"] = odm_df.apply(
+        lambda row: haversine_distance(user_lat, user_lon, row["Latitude"], row["Longitude"]), axis=1
+    )
 
-    # Select top 3 closest agencies
-    closest_agencies = odm_df.head(3)
+    # ─── FIND CLOSEST AGENCIES ──────────────────────────────────────
+    closest_agencies = odm_df.sort_values(by="User_Distance").head(3)
 
-    # ─── SHOW TABLE ─────────────────────────────────────────────────────
-    display_cols = ["Agency_name", "Total_TravelTime", "Total_Miles", "Latitude", "Longitude"]
-    st.subheader("Closest Food Pantries (from ODM)")
+    # ─── SHOW TABLE ─────────────────────────────────────────────────
+    st.subheader("Closest Food Pantries (Based on Your Location)")
+    display_cols = ["Agency_name", "Total_TravelTime", "Total_Miles", "User_Distance"]
     st.dataframe(
         closest_agencies[display_cols].rename(columns={
             "Total_TravelTime": "Travel Time (min)",
-            "Total_Miles": "Distance (miles)"
+            "Total_Miles": "Distance (miles)",
+            "User_Distance": "Distance from You (miles)"
         })
     )
 
-    # ─── MAP ─────────────────────────────────────────────────────────────
+    # ─── MAP ───────────────────────────────────────────────────────
     user_location_df = pd.DataFrame({
         "name": ["Your Location"],
         "latitude": [user_lat],
@@ -75,7 +85,11 @@ if user_address:
     agency_map_df["color_r"] = 255
     agency_map_df["color_g"] = 0
     agency_map_df["color_b"] = 0
-    agency_map_df["tooltip"] = "Agency: " + agency_map_df["name"]
+    agency_map_df["tooltip"] = (
+        "Agency: " + agency_map_df["name"] +
+        "<br>Travel Time: " + agency_map_df["Total_TravelTime"].astype(str) +
+        "<br>Distance: " + agency_map_df["User_Distance"].round(2).astype(str) + " miles"
+    )
 
     combined_df = pd.concat([user_location_df, agency_map_df], ignore_index=True)
 
