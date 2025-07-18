@@ -9,8 +9,8 @@ os.environ["MAPBOX_API_KEY"] = "pk.eyJ1IjoicnNpZGRpcTIiLCJhIjoiY21jbjcwNWtkMHV5b
 OPENCAGE_API_KEY = "f53bdda785074d5499b7a4d29d5acd1f"
 geocoder = OpenCageGeocode(OPENCAGE_API_KEY)
 
-# CSV with agency data (agency_name, address, latitude, longitude)
-AGENCY_CSV = "CAFN_July_edit.csv"
+# CSV with agency data (Name, Contact, Hours, Address, latitude, longitude)
+AGENCY_CSV = "agencies_with_latlon.csv"
 
 # ─── STREAMLIT APP ───────────────────────────────────────────────────────
 st.set_page_config(page_title="Food Pantries Map", layout="wide")
@@ -35,7 +35,12 @@ if user_address:
 
     # ─── LOAD AGENCY DATA ───────────────────────────────────────────────
     agencies_df = pd.read_csv(AGENCY_CSV)
-    agencies_df.columns = agencies_df.columns.str.strip().str.lower()
+    agencies_df.columns = agencies_df.columns.str.strip().str.title()
+
+    # Show the table with Name, Contact, Hours, Address
+    display_cols = ["Name", "Contact", "Hours", "Address"]
+    st.subheader("Food Pantry Details")
+    st.dataframe(agencies_df[display_cols])
 
     # --- user location ---
     user_location_df = pd.DataFrame({
@@ -50,14 +55,12 @@ if user_address:
 
     # --- agency locations ---
     agency_map_df = agencies_df.copy()
+    agency_map_df = agency_map_df.rename(columns={"Name": "name", "Latitude": "latitude", "Longitude": "longitude"})
     agency_map_df["color_r"] = 255
     agency_map_df["color_g"] = 0
     agency_map_df["color_b"] = 0
-    agency_map_df["tooltip"] = "Agency: " + agency_map_df["Name"]
+    agency_map_df["tooltip"] = "Agency: " + agency_map_df["name"]
 
-    #agency_map_df = agency_map_df.rename(columns={"agency_name": "name"})
-
-    # Combine user + agencies
     combined_df = pd.concat([user_location_df, agency_map_df], ignore_index=True)
 
     # ─── PYDECK MAP ─────────────────────────────────────────────
