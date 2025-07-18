@@ -10,7 +10,7 @@ OPENCAGE_API_KEY = "f53bdda785074d5499b7a4d29d5acd1f"
 geocoder = OpenCageGeocode(OPENCAGE_API_KEY)
 
 # CSV with agency data (Name, Contact, Hours, Address, latitude, longitude)
-AGENCY_CSV = "agencies_with_latlon.csv"
+AGENCY_CSV = "CAFN_July_edit.csv"
 
 # ─── STREAMLIT APP ───────────────────────────────────────────────────────
 st.set_page_config(page_title="Food Pantries Map", layout="wide")
