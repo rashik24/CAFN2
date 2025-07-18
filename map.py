@@ -9,7 +9,8 @@ import os
 # ─── CONFIG ──────────────────────────────────────────────────────────────
 os.environ["MAPBOX_API_KEY"] = "pk.eyJ1IjoicnNpZGRpcTIiLCJhIjoiY21jbjcwNWtkMHV5bzJpb2pnM3QxaDFtMyJ9.6T6i_QFuKQatpGaCFUvCKg"
 
-ODM_CSV = "ODM FBCENC 2.csv"
+ODM_CSV = "ODM FBCENC 2.csv"       # Contains travel times
+CAFN_CSV = "CAFN_July_edit.csv"    # Contains Name, Hours, etc.
 TRACTS_SHP = "cb_2023_37_tract_500k.shp"
 
 OPENCAGE_API_KEY = "f53bdda785074d5499b7a4d29d5acd1f"
@@ -41,7 +42,20 @@ if user_address:
     # ─── LOAD DATA ───────────────────────────────────────────────────────
     odm_df = pd.read_csv(ODM_CSV)
     odm_df.columns = odm_df.columns.str.strip().str.lower()
-    odm_df["geoid"] = odm_df["geoid"].astype(int)
+    odm_df.rename(columns={"agency_name": "name"}, inplace=True)
+
+    cafn_df = pd.read_csv(CAFN_CSV)
+    cafn_df.columns = cafn_df.columns.str.strip().str.lower()
+
+    # Merge ODM data with CAFN hours
+    merged_df = odm_df.merge(
+        cafn_df[["name", "hours"]],
+        on="name",
+        how="left"
+    )
+
+    # Convert GEOID column to integer for merging
+    merged_df["geoid"] = merged_df["geoid"].astype(int)
 
     tracts_gdf = gpd.read_file(TRACTS_SHP)
     tracts_gdf = tracts_gdf.to_crs(epsg=4326)
@@ -61,86 +75,21 @@ if user_address:
         st.stop()
 
     # ─── FIND AGENCIES REACHABLE FROM GEOID ─────────────────────────────
-    agencies_from_user_geoid = odm_df[
-        (odm_df["geoid"] == user_geoid) &
-        (odm_df["total_traveltime"] <= 20)
+    agencies_from_user_geoid = merged_df[
+        (merged_df["geoid"] == user_geoid) &
+        (merged_df["total_traveltime"] <= 20)
     ]
 
     if agencies_from_user_geoid.empty:
         st.warning("No agencies linked to your tract. Searching all nearby agencies instead.")
-        agencies_from_user_geoid = odm_df[odm_df["total_traveltime"] <= 60]
+        agencies_from_user_geoid = merged_df[merged_df["total_traveltime"] <= 60]
 
     if not agencies_from_user_geoid.empty:
         agencies_from_user_geoid = agencies_from_user_geoid.rename(columns={
             "total_traveltime": "travel_minutes",
-            "total_miles": "distance_miles",
-            "agency_name": "agency"
+            "total_miles": "distance_miles"
         })
 
-        # Show agency table
+        # Show agency table with Hours
         st.subheader("Nearby Agencies")
-        agencies_from_user_geoid["travel_minutes"] = agencies_from_user_geoid["travel_minutes"].round(2)
-        agencies_from_user_geoid["distance_miles"] = agencies_from_user_geoid["distance_miles"].round(2)
-        st.dataframe(agencies_from_user_geoid[['agency', 'distance_miles', 'travel_minutes']])
-
-        # ─── PYDECK MAP ─────────────────────────────────────────────
-        user_location_df = pd.DataFrame({
-            "name": ["Your Location"],
-            "latitude": [user_lat],
-            "longitude": [user_lon],
-            "color_r": [0],
-            "color_g": [0],
-            "color_b": [255],
-            "tooltip": ["Your Location"]
-        })
-
-        agency_map_df = agencies_from_user_geoid[[
-            "agency", "latitude", "longitude", "travel_minutes", "distance_miles"
-        ]].dropna().copy()
-
-        agency_map_df["color_r"] = 255
-        agency_map_df["color_g"] = 0
-        agency_map_df["color_b"] = 0
-
-        agency_map_df["tooltip"] = (
-            "Agency: " + agency_map_df["agency"] +
-            "<br>Travel Time (min): " + agency_map_df["travel_minutes"].astype(str) +
-            "<br>Distance (miles): " + agency_map_df["distance_miles"].round(2).astype(str)
-        )
-
-        agency_map_df = agency_map_df.rename(columns={"agency": "name"})
-
-        combined_df = pd.concat([user_location_df, agency_map_df], ignore_index=True)
-
-        layer = pdk.Layer(
-            "ScatterplotLayer",
-            combined_df,
-            get_position='[longitude, latitude]',
-            get_color='[color_r, color_g, color_b]',
-            get_radius=250,
-            pickable=True,
-        )
-
-        tooltip = {
-            "html": "{tooltip}",
-            "style": {"color": "white"}
-        }
-
-        view_state = pdk.ViewState(
-            longitude=user_lon,
-            latitude=user_lat,
-            zoom=10,
-            pitch=0
-        )
-
-        deck = pdk.Deck(
-            map_style='mapbox://styles/mapbox/light-v9',
-            initial_view_state=view_state,
-            layers=[layer],
-            tooltip=tooltip
-        )
-
-        st.pydeck_chart(deck)
-
-    else:
-        st.warning("No agencies accessible from your GEOID.")
+        agencies_from_user_geoid["travel_minutes"] = agen_]()_
