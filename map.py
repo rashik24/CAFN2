@@ -53,9 +53,9 @@ if user_address:
     agency_map_df["color_r"] = 255
     agency_map_df["color_g"] = 0
     agency_map_df["color_b"] = 0
-    agency_map_df["tooltip"] = "Agency: " + agency_map_df["agency_name"]
+    agency_map_df["tooltip"] = "Agency: " + agency_map_df["Name"]
 
-    agency_map_df = agency_map_df.rename(columns={"agency_name": "name"})
+    #agency_map_df = agency_map_df.rename(columns={"agency_name": "name"})
 
     # Combine user + agencies
     combined_df = pd.concat([user_location_df, agency_map_df], ignore_index=True)
