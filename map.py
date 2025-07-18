@@ -34,30 +34,25 @@ if user_address:
         st.stop()
 
     # ─── LOAD DATA ───────────────────────────────────────────────────────
-    agencies_df = pd.read_csv(AGENCY_CSV)
     odm_df = pd.read_csv(ODM_CSV)
-
-    # Clean column names
-    agencies_df.columns = agencies_df.columns.str.strip().str.title()
     odm_df.columns = odm_df.columns.str.strip()
 
-    # ─── FIND CLOSEST AGENCY ─────────────────────────────────────────────
-    odm_df_sorted = odm_df.sort_values(by="Total_TravelTime").copy()
-    closest_agency = odm_df_sorted.head(1)
+    # DEBUG: show first few rows
+    st.write("ODM Sample Data:")
+    st.write(odm_df.head())
 
-    # Merge with agency details if needed (match by Agency_name)
-    merged_df = closest_agency.merge(
-        agencies_df,
-        left_on="Agency_name",
-        right_on="Name",
-        how="left"
-    )
+    # Filter valid travel times
+    odm_df = odm_df[odm_df["Total_TravelTime"].notna()]
+    odm_df = odm_df.sort_values(by="Total_TravelTime")
+
+    # Select top 3 closest agencies
+    closest_agencies = odm_df.head(3)
 
     # ─── SHOW TABLE ─────────────────────────────────────────────────────
-    display_cols = ["Name", "Contact", "Hours", "Address", "Total_TravelTime", "Total_Miles"]
-    st.subheader("Closest Food Pantry")
+    display_cols = ["Agency_name", "Total_TravelTime", "Total_Miles", "Latitude", "Longitude"]
+    st.subheader("Closest Food Pantries (from ODM)")
     st.dataframe(
-        merged_df[display_cols].rename(columns={
+        closest_agencies[display_cols].rename(columns={
             "Total_TravelTime": "Travel Time (min)",
             "Total_Miles": "Distance (miles)"
         })
@@ -74,13 +69,14 @@ if user_address:
         "tooltip": ["Your Location"]
     })
 
-    agency_map_df = merged_df.copy()
+    agency_map_df = closest_agencies.rename(columns={
+        "Agency_name": "name", "Latitude": "latitude", "Longitude": "longitude"
+    })
     agency_map_df["color_r"] = 255
     agency_map_df["color_g"] = 0
     agency_map_df["color_b"] = 0
-    agency_map_df["tooltip"] = "Agency: " + agency_map_df["Name"]
+    agency_map_df["tooltip"] = "Agency: " + agency_map_df["name"]
 
-    agency_map_df = agency_map_df.rename(columns={"Name": "name", "Latitude": "latitude", "Longitude": "longitude"})
     combined_df = pd.concat([user_location_df, agency_map_df], ignore_index=True)
 
     layer = pdk.Layer(
